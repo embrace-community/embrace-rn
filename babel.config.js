@@ -4,6 +4,7 @@ module.exports = function (api) {
     presets: ['babel-preset-expo'],
     plugins: [
       'nativewind/babel',
+      // Makes crypto functions quicker but requires native code i.e. will not work with Expo
       [
         'module-resolver',
         {
@@ -17,23 +18,3 @@ module.exports = function (api) {
     ],
   };
 };
-
-// module.exports = function (api) {
-//   api.cache(true);
-//   return {
-//     presets: ['babel-preset-expo'],
-//     plugins: [
-//       'nativewind/babel',
-//       [
-//         'module-resolver',
-//         {
-//           alias: {
-//             crypto: 'react-native-quick-crypto',
-//             stream: 'stream-browserify',
-//             buffer: '@craftzdog/react-native-buffer',
-//           },
-//         },
-//       ],
-//     ],
-//   };
-// };
