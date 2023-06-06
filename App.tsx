@@ -18,16 +18,11 @@ import { PolybaseProvider, usePolybase } from '@polybase/react';
 import { Polybase } from '@polybase/client';
 import { DEV_PK } from 'react-native-dotenv';
 import { ethPersonalSign } from '@polybase/eth';
-import * as eth from '@polybase/eth';
 
-const polybase = new Polybase({});
-
-if (DEV_PK) {
-  console.log('SETUP DEV_PK', DEV_PK);
-  polybase.signer(async (data: string) => {
-    return { h: 'eth-personal-sign', sig: ethPersonalSign(DEV_PK, data) };
-  });
-}
+const polybase = new Polybase({
+  defaultNamespace:
+    'pk/0x5cc781bd8fd60bfbfa01419fab101daa47db1964866f04e6e86a1b963d6ed28f003a51b1867296ae00fde14c5bc160cf0d20d3656f9597cfba32a9ca9883d83a/embrace-dev',
+});
 
 function LandingScreen({ navigation }) {
   return (
@@ -64,7 +59,7 @@ function CreateAccountScreen({ navigation }) {
   const polybase = usePolybase();
   const [wallet, setWallet] = useState(null);
   const [profile, setProfile] = useState(null);
-  const usersCollection = polybase.collection('demo/social/users');
+  const usersCollection = polybase.collection('User');
 
   const createWallet = () => {
     setWallet(null);
@@ -101,15 +96,9 @@ function CreateAccountScreen({ navigation }) {
     const user = await usersCollection.record(wallet.address).get();
 
     if (!user.exists()) {
-      const encryptedPrivateKey = await eth.encrypt(
-        wallet.privateKey,
-        wallet.address,
-      );
-      await usersCollection
-        .create([wallet.address, encryptedPrivateKey])
-        .catch((e) => {
-          console.log('Error', e);
-        });
+      await usersCollection.create([wallet.address, 'John Doe']).catch((e) => {
+        console.log('Error', e);
+      });
     } else {
       console.log('User already exists');
     }
@@ -120,8 +109,9 @@ function CreateAccountScreen({ navigation }) {
   const setProfileData = useCallback(async () => {
     console.log('Setting profile', wallet.address);
     const user = await usersCollection
-      .record(wallet.address)
-      .call('setProfile', ['John Doe', 'This is a test profile'])
+      // .record(wallet.address)
+      .record('0xdf7bF51177d1635e565B7Af469F5B20E555fA10B')
+      .call('setUser', ['Me Myself and I TESTING'])
       .then((res) => {
         console.log('res', res);
       })
@@ -132,10 +122,15 @@ function CreateAccountScreen({ navigation }) {
     readProfile();
   }, [polybase, wallet]);
 
-  // useEffect(() => {
-  //   if (!wallet?.address) return;
-  //   readProfile();
-  // }, [wallet]);
+  useEffect(() => {
+    if (!wallet?.address) return;
+    polybase.signer(async (data: string) => {
+      return {
+        h: 'eth-personal-sign',
+        sig: ethPersonalSign(wallet.privateKey, data),
+      };
+    });
+  }, [wallet]);
 
   useEffect(() => {
     setTimeout(() => {
