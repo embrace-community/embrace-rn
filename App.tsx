@@ -2,12 +2,10 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Touchable,
-  Button,
   TouchableWithoutFeedback,
   ActivityIndicator,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // Imports for ethers
 import 'react-native-get-random-values';
 import '@ethersproject/shims';
@@ -16,38 +14,21 @@ import { ethers } from 'ethers';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import {
-  PolybaseProvider,
-  usePolybase,
-  useDocument,
-  useCollection,
-} from '@polybase/react';
+import { PolybaseProvider, usePolybase } from '@polybase/react';
 import { Polybase } from '@polybase/client';
+import { DEV_PK } from 'react-native-dotenv';
+import { ethPersonalSign } from '@polybase/eth';
+import * as eth from '@polybase/eth';
 
-const polybase = new Polybase({
-  // defaultNamespace: 'test',
-  // baseURL: 'https://testnet.polybase.xyz/',
-});
+const polybase = new Polybase({});
 
-// Example
-const isSetup = false;
-
-function HomeScreen({ navigation, route }) {
-  return (
-    <View className="flex-1 items-center justify-center bg-white p-4">
-      <Text className="text-2xl font-bold text-center text-gray-800">
-        Open up App.tsx to start working on your app
-      </Text>
-      <TouchableOpacity
-        onPress={() => {
-          navigation.navigate('Landing');
-        }}
-      >
-        <Text className="text-black">Back</Text>
-      </TouchableOpacity>
-    </View>
-  );
+if (DEV_PK) {
+  console.log('SETUP DEV_PK', DEV_PK);
+  polybase.signer(async (data: string) => {
+    return { h: 'eth-personal-sign', sig: ethPersonalSign(DEV_PK, data) };
+  });
 }
+
 function LandingScreen({ navigation }) {
   return (
     <View className="flex-1 items-center justify-center bg-white p-2 gap-3">
@@ -67,16 +48,6 @@ function LandingScreen({ navigation }) {
   );
 }
 
-function SettingsScreen({ navigation }) {
-  return (
-    <View className="flex-1 items-center justify-center bg-white p-4">
-      <Text className="text-2xl font-bold text-center text-gray-800">
-        Settings
-      </Text>
-    </View>
-  );
-}
-
 function CreateDefaultProfileScreen({ navigation }) {
   return (
     <View className="flex-1 items-center justify-center bg-white p-4">
@@ -90,45 +61,87 @@ function CreateDefaultProfileScreen({ navigation }) {
 }
 
 function CreateAccountScreen({ navigation }) {
+  const polybase = usePolybase();
   const [wallet, setWallet] = useState(null);
   const [profile, setProfile] = useState(null);
+  const usersCollection = polybase.collection('demo/social/users');
 
   const createWallet = () => {
     setWallet(null);
+
+    if (DEV_PK) {
+      const w = new ethers.Wallet(DEV_PK);
+      console.log('address:', w.address);
+      console.log('privateKey:', w.privateKey);
+      setWallet(w);
+      return;
+    }
+
     const w = ethers.Wallet.createRandom();
     console.log('address:', w.address);
     console.log('mnemonic:', w.mnemonic.phrase);
     console.log('privateKey:', w.privateKey);
-
     setWallet(w);
   };
+
+  const readProfile = useCallback(async () => {
+    if (!wallet) return;
+
+    const user = await usersCollection.record(wallet.address).get();
+
+    if (user) {
+      console.log('User', user);
+      setProfile(user.data?.name);
+    }
+  }, [polybase, wallet]);
+
+  const createProfile = useCallback(async () => {
+    console.log('Creating profile');
+
+    const user = await usersCollection.record(wallet.address).get();
+
+    if (!user.exists()) {
+      const encryptedPrivateKey = await eth.encrypt(
+        wallet.privateKey,
+        wallet.address,
+      );
+      await usersCollection
+        .create([wallet.address, encryptedPrivateKey])
+        .catch((e) => {
+          console.log('Error', e);
+        });
+    } else {
+      console.log('User already exists');
+    }
+
+    console.log('User', user);
+  }, [polybase, wallet]);
+
+  const setProfileData = useCallback(async () => {
+    console.log('Setting profile', wallet.address);
+    const user = await usersCollection
+      .record(wallet.address)
+      .call('setProfile', ['John Doe', 'This is a test profile'])
+      .then((res) => {
+        console.log('res', res);
+      })
+      .catch((e) => {
+        console.log('Error', e);
+      });
+
+    readProfile();
+  }, [polybase, wallet]);
+
+  // useEffect(() => {
+  //   if (!wallet?.address) return;
+  //   readProfile();
+  // }, [wallet]);
 
   useEffect(() => {
     setTimeout(() => {
       createWallet();
     }, 500);
   }, []);
-
-  const polybase = usePolybase();
-
-  const { data, error, loading } = useDocument(
-    polybase
-      .collection('demo/social/users')
-      .record('0x6b96f1a8d65ede8ad688716078b3dd79f9bd7323'),
-  );
-
-  if (error) {
-    console.error('Polybase ERROR', error);
-  }
-
-  if (!loading && !error && data) {
-    console.log('Polybase DATA', data?.data?.name);
-
-    // setProfile(data.);
-    // data.data.forEach((doc) => {
-    //   console.log('Polybase DOC', doc);
-    // });
-  }
 
   return (
     <View className="flex-1 items-center justify-center bg-white p-4">
@@ -137,16 +150,36 @@ function CreateAccountScreen({ navigation }) {
           <ActivityIndicator size="small" color="#0000ff" />
         </Text>
       ) : (
-        <Text className="text-2xl font-bold text-center text-gray-800">
-          Account Created {wallet.address}
-        </Text>
+        <>
+          <Text className="text-2xl font-bold text-center text-gray-800">
+            Account Created {wallet.address}
+          </Text>
+        </>
       )}
 
       {profile && (
-        <Text className="text-2xl font-bold text-center text-gray-800">
+        <Text className="text-md font-bold text-center text-gray-800">
           Profile {profile}
         </Text>
       )}
+
+      <TouchableOpacity onPress={() => createProfile()}>
+        <Text className="text-md m-4 font-bold text-center text-gray-800">
+          Create
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setProfileData()}>
+        <Text className="text-md m-4 font-bold text-center text-gray-800">
+          Set Profile
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
+        <Text className="text-md font-bold text-center text-gray-800">
+          Back
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -159,24 +192,14 @@ export default function App() {
   return (
     <PolybaseProvider polybase={polybase}>
       <NavigationContainer>
-        {!isSetup ? (
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Landing" component={LandingScreen} />
-            <Stack.Screen
-              name="CreateAccount"
-              component={CreateAccountScreen}
-            />
-            <Stack.Screen
-              name="CreateDefaultProfile"
-              component={CreateDefaultProfileScreen}
-            />
-          </Stack.Navigator>
-        ) : (
-          <Tab.Navigator>
-            <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Settings" component={SettingsScreen} />
-          </Tab.Navigator>
-        )}
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Landing" component={LandingScreen} />
+          <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+          <Stack.Screen
+            name="CreateDefaultProfile"
+            component={CreateDefaultProfileScreen}
+          />
+        </Stack.Navigator>
       </NavigationContainer>
     </PolybaseProvider>
   );
