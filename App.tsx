@@ -10,7 +10,9 @@ import { NavigationContainer } from '@react-navigation/native';
 
 // Screens
 import GettingStarted from './screens/getting-started/GettingStarted';
+// import CreateAccount from './screens/getting-started/_CreateAccountPOC';
 import CreateAccount from './screens/getting-started/CreateAccount';
+import Home from './screens/user/Home';
 
 // Polybase
 import { PolybaseProvider } from '@polybase/react';
@@ -27,6 +29,7 @@ export default function App() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="GettingStarted" component={GettingStarted} />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
+          <Stack.Screen name="Home" component={Home} />
         </Stack.Navigator>
       </NavigationContainer>
     </PolybaseProvider>

@@ -1,16 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ethers } from 'ethers';
 import { usePolybase } from '@polybase/react';
 import { DEV_PK } from 'react-native-dotenv';
 // TODO: Use MMKV Instead https://github.com/mrousavy/react-native-mmkv
 import * as SecureStore from 'expo-secure-store';
+import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
 
-export default function CreateAccountScreen({ navigation }) {
+type Props = {
+  navigation: NativeStackNavigationHelpers;
+};
+
+export default function CreateAccountScreen({ navigation }: Props) {
   const polybase = usePolybase();
   const [account, setAccount] = useState(null);
   const [profile, setProfile] = useState(null);
-  const usersCollection = polybase.collection('User');
+  const usersCollection = useMemo(
+    () => polybase.collection('User'),
+    [polybase],
+  );
 
   const createWallet = async () => {
     setAccount(null);
@@ -40,7 +48,8 @@ export default function CreateAccountScreen({ navigation }) {
     const user = await usersCollection.record(account).get();
 
     if (user) {
-      console.log('User', user);
+      console.log('User - Read', user);
+      console.log('User Public Key', user.data?.publicKey);
       setProfile(user.data?.name);
     }
   }, [polybase, account]);
@@ -85,37 +94,37 @@ export default function CreateAccountScreen({ navigation }) {
   return (
     <View className="flex-1 items-center justify-center bg-white p-4">
       {!account ? (
-        <Text className="text-2xl font-bold text-center text-gray-800">
+        <Text className="text-center text-2xl font-bold text-gray-800">
           <ActivityIndicator size="small" color="#0000ff" />
         </Text>
       ) : (
         <>
-          <Text className="text-2xl font-bold text-center text-gray-800">
+          <Text className="text-center text-2xl font-bold text-gray-800">
             Account Created {account}
           </Text>
         </>
       )}
 
       {profile && (
-        <Text className="text-md font-bold text-center text-gray-800">
+        <Text className="text-md text-center font-bold text-gray-800">
           Profile {profile}
         </Text>
       )}
 
       <TouchableOpacity onPress={() => createProfile()}>
-        <Text className="text-md m-4 font-bold text-center text-gray-800">
+        <Text className="text-md m-4 text-center font-bold text-gray-800">
           Create
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => setProfileData()}>
-        <Text className="text-md m-4 font-bold text-center text-gray-800">
+        <Text className="text-md m-4 text-center font-bold text-gray-800">
           Set Profile
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
-        <Text className="text-md font-bold text-center text-gray-800">
+      <TouchableOpacity onPress={() => navigation.navigate('GettingStarted')}>
+        <Text className="text-md text-center font-bold text-gray-800">
           Back
         </Text>
       </TouchableOpacity>
