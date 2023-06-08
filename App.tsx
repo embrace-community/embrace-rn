@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // Imports for ethers
 // TODO: Setup https://github.com/margelo/react-native-quick-crypto
 import 'react-native-get-random-values';
@@ -18,20 +18,35 @@ import Home from './screens/user/Home';
 import { PolybaseProvider } from '@polybase/react';
 import initPolybase from './libraries/initPolybase';
 
+import { LocalDbProvider } from './libraries/LocalDbProvider';
+import initLocalDb from './libraries/initLocalDb';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [db, setDb] = useState(null);
   const polybase = initPolybase();
 
+  const initDB = useCallback(async () => {
+    const _db = await initLocalDb();
+    setDb(_db);
+  }, [setDb]);
+
+  useEffect(() => {
+    initDB();
+  }, [initDB]);
+
   return (
-    <PolybaseProvider polybase={polybase}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="GettingStarted" component={GettingStarted} />
-          <Stack.Screen name="CreateAccount" component={CreateAccount} />
-          <Stack.Screen name="Home" component={Home} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PolybaseProvider>
+    <LocalDbProvider localDb={db}>
+      <PolybaseProvider polybase={polybase}>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="GettingStarted" component={GettingStarted} />
+            <Stack.Screen name="CreateAccount" component={CreateAccount} />
+            <Stack.Screen name="Home" component={Home} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PolybaseProvider>
+    </LocalDbProvider>
   );
 }

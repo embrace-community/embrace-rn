@@ -11,33 +11,55 @@ import { usePolybase } from '@polybase/react';
 import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styled } from 'nativewind';
-import { useCallback, useMemo, useState } from 'react';
-import { NFTStorage } from 'nft.storage';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import classNames from 'classnames';
 import * as SecureStore from 'expo-secure-store';
 import { Wallet, ethers } from 'ethers';
-import { ENV, DEV_PK, DEV_MNEMONIC } from 'react-native-dotenv';
+import {
+  ENV,
+  DEV_PK,
+  DEV_MNEMONIC,
+  MY_PROFILES_COLLECTION,
+  API_ENDPOINT,
+} from 'react-native-dotenv';
 import { v4 as uuidv4 } from 'uuid';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
+import { LocalDbContext } from '../../libraries/LocalDbProvider';
 
 type Props = {
   navigation: NativeStackNavigationHelpers;
 };
 
 export default function CreateAccount({ navigation }: Props) {
+  const polybase = usePolybase();
+  const localDb = useContext(LocalDbContext);
+
   const [handle, setHandle] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [image, setImage] = useState(null);
-  const [account, setAccount] = useState(null);
+  const [cids, setCids] = useState(null);
+
   const [loading, setLoading] = useState(false);
-  const polybase = usePolybase();
+
   const profileCollection = useMemo(
     () => polybase.collection('Profile'),
     [polybase],
   );
 
-  const createAccount = async () => {
+  useEffect(() => {
+    async function localProfiles() {
+      if (!localDb) return;
+
+      const profiles = await localDb[MY_PROFILES_COLLECTION].find().exec();
+      console.log('profiles', profiles);
+    }
+    localProfiles();
+  }, [localDb]);
+
+  const createAccount = useCallback(async () => {
     // Validate form - handle and display name
     if (!handle || !displayName) {
       return Alert.alert('Please enter a valid handle and display name');
@@ -45,18 +67,25 @@ export default function CreateAccount({ navigation }: Props) {
 
     setLoading(true);
 
-    // Upload metadata
-    // Save to polybase
+    // Save profile to local DB
+    // Create Wallet
 
-    createWallet();
+    // Later, upload to IPFS and save to Polybase
 
+    // const metadataUploaded = await uploadMetadata();
+    // if (!metadataUploaded) {
+    //   setLoading(false);
+    //   return Alert.alert('Error creating profile');
+    // }
+
+    // createWallet();
     createProfile();
 
     setLoading(false);
-    navigation.navigate('Home');
-  };
+    //navigation.navigate('Home');
+  }, [image, handle, displayName]);
 
-  const pickImage = async () => {
+  const pickImage = useCallback(async () => {
     // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -66,30 +95,62 @@ export default function CreateAccount({ navigation }: Props) {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      try {
+        const selectedImage = result.assets[0];
+
+        const fileInfo = await FileSystem.getInfoAsync(selectedImage.uri);
+
+        //@ts-ignore - types are incorrect for fileInfo
+        const compress = compressSizer(fileInfo.size);
+
+        console.log('fileInfo', fileInfo);
+        console.log('compress', compress);
+
+        const compressedImage = await manipulateAsync(
+          result.assets[0].uri,
+          [],
+          {
+            compress,
+            format: SaveFormat.JPEG,
+          },
+        );
+        setImage(compressedImage.uri);
+
+        console.log('SELECTED IMAGE', result.assets[0].uri);
+        console.log('COMPRESSED IMAGE', compressedImage.uri);
+      } catch (error) {
+        console.log(error);
+      }
     }
+  }, []);
+
+  const compressSizer = (size: number) => {
+    const MB = size / Math.pow(1024, 2);
+    if (Math.round(MB) === 0) return 1;
+    if (Math.round(MB) === 1) return 0.8;
+    if (Math.round(MB) < 5) return 0.1;
+    if (Math.round(MB) >= 5) return 0;
   };
 
   const validateHandle = (text: string) => {
     const handleRegex = /^[a-zA-Z0-9_]{1,15}$/;
     if (handleRegex.test(text)) {
+      console.log('setHandle', text);
       setHandle(text.toLowerCase());
     }
   };
 
   // Create wallet
-  const createWallet = async () => {
+  const createWallet = useCallback(async () => {
     console.log('createWallet');
 
     if (ENV === 'development') {
       const wallet = new ethers.Wallet(DEV_PK);
-      setAccount(wallet.address);
       await SecureStore.setItemAsync('wallet.privateKey', wallet.privateKey);
       await SecureStore.setItemAsync('wallet.address', wallet.address);
       await SecureStore.setItemAsync('wallet.mnemonic', DEV_MNEMONIC);
     } else {
       const wallet = ethers.Wallet.createRandom();
-      setAccount(wallet.address);
       await SecureStore.setItemAsync('wallet.privateKey', wallet.privateKey);
       await SecureStore.setItemAsync('wallet.address', wallet.address);
       await SecureStore.setItemAsync('wallet.mnemonic', wallet.mnemonic.phrase);
@@ -108,23 +169,67 @@ export default function CreateAccount({ navigation }: Props) {
       'wallet.mnemonic',
       await SecureStore.getItemAsync('wallet.mnemonic'),
     );
-  };
+  }, []);
 
-  const uploadMetadata = async () => {
-    // const metadata = await polybase.uploadMetadata();
-    // console.log(metadata);
-    console.log('uploadMetadata');
-  };
+  const uploadMetadata = useCallback(async () => {
+    try {
+      const data = new FormData();
+
+      data.append('image', {
+        uri: image,
+        type: 'image/jpg',
+        name: 'image.jpg',
+      } as any);
+
+      data.append('name', displayName);
+      data.append('handle', handle);
+
+      let res = await fetch(API_ENDPOINT + 'ipfs-upload', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+        body: data,
+      });
+
+      let result = await res.json();
+
+      if (res.status !== 200) {
+        return false;
+      }
+      setCids(result);
+      return true;
+    } catch (error) {
+      // Error retrieving data
+      // Alert.alert('Error', error.message);
+      console.log('error upload', error);
+    }
+  }, [image, handle, displayName]);
 
   const createProfile = useCallback(async () => {
     console.log('Creating profile');
 
-    await profileCollection
-      .create([uuidv4(), account, handle, displayName])
-      .catch((e) => {
-        console.log('Error', e);
-      });
-  }, [polybase, account]);
+    console.log(handle, displayName, image);
+
+    localDb[MY_PROFILES_COLLECTION].insert({
+      handle,
+      displayName,
+      avatarUri: image,
+    });
+
+    // Save to local DB first
+    // Then on local RxDB subscribe to changes and sync to Polybase
+    // Afterwards, mint the profile NFT
+    //  First requiring the account to have gas (self-funded)
+    //  Later relayer pays gas
+
+    //   try {
+    //     await profileCollection.create(profile);
+    //   } catch (e) {
+    //     console.log('Error', e);
+    //   }
+  }, [handle, displayName, image, cids, localDb]);
 
   return (
     <SafeAreaView className="flex-1">

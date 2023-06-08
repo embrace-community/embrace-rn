@@ -11,8 +11,6 @@ import fs from 'fs';
 const NFT_STORAGE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDlGOGMyQjNFOTMwNjNENzAwZTA3OGRENEZlMzU1NkM3RDMxMTUzNTgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY4NjE0Njg2MTg3NiwibmFtZSI6IkVtYnJhY2UgQ29tbXVuaXR5In0.yahUDD1IjE60Yypa9HylVSUL-eVJSV2dSHXMPzlc3TE';
 
-// console.log('NFT_STORAGE_KEY', NFT_STORAGE_KEY);
-
 /**
  * Reads an image file from `imagePath` and stores an NFT with the given name and description.
  * @param {string} imagePath the path to an image file
