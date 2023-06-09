@@ -7,6 +7,8 @@ import { ethPersonalSign } from '@polybase/eth';
 import * as SecureStore from 'expo-secure-store';
 
 export default function initPolybase() {
+  console.log('Initializing polybase...', POLYBASE_NAMESPACE);
+
   const polybase = new Polybase({
     defaultNamespace: POLYBASE_NAMESPACE ?? null,
   });

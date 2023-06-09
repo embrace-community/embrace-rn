@@ -12,7 +12,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import GettingStarted from './screens/getting-started/GettingStarted';
 // import CreateAccount from './screens/getting-started/_CreateAccountPOC';
 import CreateAccount from './screens/getting-started/CreateAccount';
-import Home from './screens/user/Home';
+import UserHome from './screens/user/Home';
 
 // Polybase
 import { PolybaseProvider } from '@polybase/react';
@@ -27,14 +27,14 @@ export default function App() {
   const [db, setDb] = useState(null);
   const polybase = initPolybase();
 
-  const initDB = useCallback(async () => {
-    const _db = await initLocalDb();
-    setDb(_db);
-  }, [setDb]);
-
   useEffect(() => {
-    initDB();
-  }, [initDB]);
+    const initDb = async function () {
+      const _db = await initLocalDb(polybase);
+      setDb(_db);
+    };
+
+    initDb();
+  }, []);
 
   return (
     <LocalDbProvider localDb={db}>
@@ -43,7 +43,7 @@ export default function App() {
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="GettingStarted" component={GettingStarted} />
             <Stack.Screen name="CreateAccount" component={CreateAccount} />
-            <Stack.Screen name="Home" component={Home} />
+            <Stack.Screen name="UserHome" component={UserHome} />
           </Stack.Navigator>
         </NavigationContainer>
       </PolybaseProvider>

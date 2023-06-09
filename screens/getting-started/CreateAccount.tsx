@@ -7,7 +7,6 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { usePolybase } from '@polybase/react';
 import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styled } from 'nativewind';
@@ -16,7 +15,7 @@ import { AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import classNames from 'classnames';
 import * as SecureStore from 'expo-secure-store';
-import { Wallet, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import {
   ENV,
   DEV_PK,
@@ -24,7 +23,6 @@ import {
   MY_PROFILES_COLLECTION,
   API_ENDPOINT,
 } from 'react-native-dotenv';
-import { v4 as uuidv4 } from 'uuid';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { LocalDbContext } from '../../libraries/LocalDbProvider';
@@ -34,21 +32,16 @@ type Props = {
 };
 
 export default function CreateAccount({ navigation }: Props) {
-  const polybase = usePolybase();
   const localDb = useContext(LocalDbContext);
 
-  const [handle, setHandle] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [handle, setHandle] = useState('martinopensky');
+  const [displayName, setDisplayName] = useState('Martin');
   const [image, setImage] = useState(null);
   const [cids, setCids] = useState(null);
 
   const [loading, setLoading] = useState(false);
 
-  const profileCollection = useMemo(
-    () => polybase.collection('Profile'),
-    [polybase],
-  );
-
+  // TODO: Temp to see state of local DB
   useEffect(() => {
     async function localProfiles() {
       if (!localDb) return;
@@ -59,7 +52,31 @@ export default function CreateAccount({ navigation }: Props) {
     localProfiles();
   }, [localDb]);
 
-  const createAccount = useCallback(async () => {
+  // Update local profiles once CIDs have been set
+  useEffect(() => {
+    async function updateLocalProfiles() {
+      if (!localDb || !cids || !handle) return;
+
+      console.log('SETTING PROFILE CIDS', cids);
+
+      const data = {
+        metadataUri: `ipfs://${cids.metadataCid}`,
+      };
+
+      if (cids.avatarCid) {
+        //TODO Create types for profile
+        data.avatarUri = `ipfs://${cids.avatarCid}`;
+      }
+
+      await localDb[MY_PROFILES_COLLECTION].findOne(handle).update({
+        $set: data,
+      });
+    }
+
+    updateLocalProfiles();
+  }, [localDb, cids, handle]);
+
+  const createAccount = async () => {
     // Validate form - handle and display name
     if (!handle || !displayName) {
       return Alert.alert('Please enter a valid handle and display name');
@@ -67,23 +84,21 @@ export default function CreateAccount({ navigation }: Props) {
 
     setLoading(true);
 
-    // Save profile to local DB
-    // Create Wallet
-
-    // Later, upload to IPFS and save to Polybase
-
-    // const metadataUploaded = await uploadMetadata();
-    // if (!metadataUploaded) {
-    //   setLoading(false);
-    //   return Alert.alert('Error creating profile');
-    // }
-
-    // createWallet();
+    // Save profile to local DB - will be synced to Polybase
     createProfile();
 
+    // Upload metadata & avatar to IPFS
+    // Once CIDs have been set then they will be saved to Profile collection
+    uploadMetadata();
+
+    // Create wallet
+    createWallet();
+
+    // Mint profile NFT
+
     setLoading(false);
-    //navigation.navigate('Home');
-  }, [image, handle, displayName]);
+    navigation.navigate('UserHome');
+  };
 
   const pickImage = useCallback(async () => {
     // No permissions request is necessary for launching the image library
@@ -171,20 +186,26 @@ export default function CreateAccount({ navigation }: Props) {
     );
   }, []);
 
-  const uploadMetadata = useCallback(async () => {
+  const uploadMetadata = async () => {
+    console.log('uploadMetadata');
+
     try {
       const data = new FormData();
 
-      data.append('image', {
-        uri: image,
-        type: 'image/jpg',
-        name: 'image.jpg',
-      } as any);
+      if (image) {
+        data.append('image', {
+          uri: image,
+          type: 'image/jpg',
+          name: 'image.jpg',
+        } as any);
+      }
 
       data.append('name', displayName);
       data.append('handle', handle);
 
-      let res = await fetch(API_ENDPOINT + 'ipfs-upload', {
+      console.log('UPLOADING PROFILE', data, API_ENDPOINT + 'profile');
+
+      let res = await fetch(API_ENDPOINT + 'profile', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -196,8 +217,10 @@ export default function CreateAccount({ navigation }: Props) {
       let result = await res.json();
 
       if (res.status !== 200) {
+        console.log('Problem uploading metadata', result, res.status);
         return false;
       }
+
       setCids(result);
       return true;
     } catch (error) {
@@ -205,31 +228,19 @@ export default function CreateAccount({ navigation }: Props) {
       // Alert.alert('Error', error.message);
       console.log('error upload', error);
     }
-  }, [image, handle, displayName]);
+  };
 
-  const createProfile = useCallback(async () => {
+  const createProfile = async () => {
     console.log('Creating profile');
 
     console.log(handle, displayName, image);
 
-    localDb[MY_PROFILES_COLLECTION].insert({
+    localDb[MY_PROFILES_COLLECTION].upsert({
       handle,
       displayName,
       avatarUri: image,
-    });
-
-    // Save to local DB first
-    // Then on local RxDB subscribe to changes and sync to Polybase
-    // Afterwards, mint the profile NFT
-    //  First requiring the account to have gas (self-funded)
-    //  Later relayer pays gas
-
-    //   try {
-    //     await profileCollection.create(profile);
-    //   } catch (e) {
-    //     console.log('Error', e);
-    //   }
-  }, [handle, displayName, image, cids, localDb]);
+    }).catch((e) => console.log('RxDB Error', e));
+  };
 
   return (
     <SafeAreaView className="flex-1">

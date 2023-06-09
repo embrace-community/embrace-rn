@@ -33,7 +33,7 @@ export default function Home({ navigation }: Props) {
 
       <Text className="text-center text-2xl font-bold text-gray-800">Home</Text>
       <Text className="px-8 text-center text-lg text-gray-600">
-        Welcome to Polybase! {account}
+        Welcome to Embrace! {account}
       </Text>
       <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
         <Text className="px-8 text-center text-lg text-gray-600">Back</Text>

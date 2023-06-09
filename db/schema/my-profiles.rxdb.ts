@@ -16,11 +16,11 @@ const localProfileSchema = {
     localAvatarUri: {
       type: 'string',
     },
-    metadataCid: {
+    metadataUri: {
       type: 'string',
       maxLength: '128',
     },
-    avatarCid: {
+    avatarUri: {
       type: 'string',
       maxLength: '128',
     },
