@@ -6,6 +6,7 @@ import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import {
   ENV,
+  DEV_PK,
   LOCAL_DB_NAME,
   MY_PROFILES_COLLECTION,
 } from 'react-native-dotenv';
@@ -16,6 +17,7 @@ addRxPlugin(RxDBQueryBuilderPlugin);
 
 import localProfileSchema from '../db/schema/my-profiles.rxdb';
 import { Polybase } from '@polybase/client';
+import { isMnemonicSet } from './Wallet';
 
 if (!LOCAL_DB_NAME) {
   throw new Error('LOCAL_DB_NAME not defined');
@@ -58,6 +60,21 @@ const initLocalDb = async (polybase: Polybase) => {
         schema: localProfileSchema,
       },
     });
+
+    // During development - if profiles is empty, add a default profile (if a mnemonic is available)
+    if (ENV === 'development') {
+      const profiles = await db[profileCollectionName].find().exec();
+      const _isMnemonicSet = isMnemonicSet();
+
+      if (profiles.length === 0 && _isMnemonicSet) {
+        await db[profileCollectionName].insert({
+          handle: 'martinopensky',
+          displayName: 'Martin',
+          address: DEV_PK,
+        });
+      }
+    }
+
     console.log('Collection added!');
   } catch (err) {
     console.log('ERROR CREATING COLLECTION', err);
@@ -68,13 +85,13 @@ const initLocalDb = async (polybase: Polybase) => {
 
     db[profileCollectionName].insert$.subscribe((changeEvent) => {
       console.log('INSERTED TO PROFILE');
-      console.log(changeEvent);
+      // console.log(changeEvent);
 
       // We don't sync to Polybase here, as we only want to sync once the metadataCid is available
     });
     db[profileCollectionName].update$.subscribe(async (changeEvent) => {
       console.log('UPDATE TO PROFILE');
-      console.log(changeEvent.documentData);
+      // console.log(changeEvent.documentData);
 
       const document = changeEvent.documentData;
 

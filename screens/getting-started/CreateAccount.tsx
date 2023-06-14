@@ -10,19 +10,12 @@ import {
 import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styled } from 'nativewind';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import classNames from 'classnames';
-import * as SecureStore from 'expo-secure-store';
-import { ethers } from 'ethers';
-import {
-  ENV,
-  DEV_PK,
-  DEV_MNEMONIC,
-  MY_PROFILES_COLLECTION,
-  API_ENDPOINT,
-} from 'react-native-dotenv';
+import { MY_PROFILES_COLLECTION, API_ENDPOINT } from 'react-native-dotenv';
+import { createWallet } from '../../libraries/Wallet';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { LocalDbContext } from '../../libraries/LocalDbProvider';
@@ -41,30 +34,23 @@ export default function CreateAccount({ navigation }: Props) {
 
   const [loading, setLoading] = useState(false);
 
-  // TODO: Temp to see state of local DB
-  useEffect(() => {
-    async function localProfiles() {
-      if (!localDb) return;
-
-      const profiles = await localDb[MY_PROFILES_COLLECTION].find().exec();
-      console.log('profiles', profiles);
-    }
-    localProfiles();
-  }, [localDb]);
+  type CID = {
+    metadataUri: string;
+    avatarUri?: string;
+  };
 
   // Update local profiles once CIDs have been set
   useEffect(() => {
-    async function updateLocalProfiles() {
+    async function updateLocalProfile() {
       if (!localDb || !cids || !handle) return;
 
       console.log('SETTING PROFILE CIDS', cids);
 
-      const data = {
+      const data: CID = {
         metadataUri: `ipfs://${cids.metadataCid}`,
       };
 
       if (cids.avatarCid) {
-        //TODO Create types for profile
         data.avatarUri = `ipfs://${cids.avatarCid}`;
       }
 
@@ -73,10 +59,10 @@ export default function CreateAccount({ navigation }: Props) {
       });
     }
 
-    updateLocalProfiles();
+    updateLocalProfile();
   }, [localDb, cids, handle]);
 
-  const createAccount = async () => {
+  const initAccount = async () => {
     // Validate form - handle and display name
     if (!handle || !displayName) {
       return Alert.alert('Please enter a valid handle and display name');
@@ -84,20 +70,32 @@ export default function CreateAccount({ navigation }: Props) {
 
     setLoading(true);
 
+    // Create wallet
+    const accountAddress = await createWallet();
+
     // Save profile to local DB - will be synced to Polybase
-    createProfile();
+    const profile = createProfile(accountAddress);
 
     // Upload metadata & avatar to IPFS
     // Once CIDs have been set then they will be saved to Profile collection
     uploadMetadata();
 
-    // Create wallet
-    createWallet();
-
-    // Mint profile NFT
-
     setLoading(false);
-    navigation.navigate('UserHome');
+
+    console.log('profile', profile);
+
+    navigation.navigate('Root', {
+      screen: 'Account',
+      params: {
+        screen: 'AccountHome',
+        params: {
+          address: profile.address,
+          localAvatarUri: profile?.localAvatarUri,
+          handle: profile.handle,
+          displayName: profile.displayName,
+        },
+      },
+    });
   };
 
   const pickImage = useCallback(async () => {
@@ -147,6 +145,7 @@ export default function CreateAccount({ navigation }: Props) {
     if (Math.round(MB) >= 5) return 0;
   };
 
+  // Local validation of handle
   const validateHandle = (text: string) => {
     const handleRegex = /^[a-zA-Z0-9_]{1,15}$/;
     if (handleRegex.test(text)) {
@@ -155,37 +154,7 @@ export default function CreateAccount({ navigation }: Props) {
     }
   };
 
-  // Create wallet
-  const createWallet = useCallback(async () => {
-    console.log('createWallet');
-
-    if (ENV === 'development') {
-      const wallet = new ethers.Wallet(DEV_PK);
-      await SecureStore.setItemAsync('wallet.privateKey', wallet.privateKey);
-      await SecureStore.setItemAsync('wallet.address', wallet.address);
-      await SecureStore.setItemAsync('wallet.mnemonic', DEV_MNEMONIC);
-    } else {
-      const wallet = ethers.Wallet.createRandom();
-      await SecureStore.setItemAsync('wallet.privateKey', wallet.privateKey);
-      await SecureStore.setItemAsync('wallet.address', wallet.address);
-      await SecureStore.setItemAsync('wallet.mnemonic', wallet.mnemonic.phrase);
-    }
-
-    console.log('wallet created');
-    console.log(
-      'wallet.privateKey',
-      await SecureStore.getItemAsync('wallet.privateKey'),
-    );
-    console.log(
-      'wallet.address',
-      await SecureStore.getItemAsync('wallet.address'),
-    );
-    console.log(
-      'wallet.mnemonic',
-      await SecureStore.getItemAsync('wallet.mnemonic'),
-    );
-  }, []);
-
+  // Upload profile metadata to IPFS
   const uploadMetadata = async () => {
     console.log('uploadMetadata');
 
@@ -230,16 +199,22 @@ export default function CreateAccount({ navigation }: Props) {
     }
   };
 
-  const createProfile = async () => {
+  // Creating profile in local DB
+  const createProfile = async (accountAddress: string) => {
     console.log('Creating profile');
 
-    console.log(handle, displayName, image);
-
-    localDb[MY_PROFILES_COLLECTION].upsert({
+    const profile = {
+      address: accountAddress,
       handle,
       displayName,
       avatarUri: image,
-    }).catch((e) => console.log('RxDB Error', e));
+    };
+
+    localDb[MY_PROFILES_COLLECTION].upsert(profile).catch((e) =>
+      console.log('RxDB Error', e),
+    );
+
+    return profile;
   };
 
   return (
@@ -299,7 +274,7 @@ export default function CreateAccount({ navigation }: Props) {
           </TouchableOpacity>
           <TouchableOpacity
             className="flex-1"
-            onPress={createAccount}
+            onPress={initAccount}
             disabled={loading}
           >
             <Button

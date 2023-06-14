@@ -11,6 +11,7 @@ module.exports = function (api) {
           verbose: false,
         },
       ],
+      'react-native-reanimated/plugin',
 
       // Makes crypto functions quicker but requires native code i.e. will not work with Expo
       // [

@@ -13,6 +13,10 @@ const localProfileSchema = {
       type: 'string',
       maxLength: '128',
     },
+    address: {
+      type: 'string',
+      maxLength: '128',
+    },
     localAvatarUri: {
       type: 'string',
     },
@@ -25,7 +29,7 @@ const localProfileSchema = {
       maxLength: '128',
     },
   },
-  required: ['handle', 'displayName'],
+  required: ['handle', 'displayName', 'address'],
 };
 
 export default localProfileSchema;

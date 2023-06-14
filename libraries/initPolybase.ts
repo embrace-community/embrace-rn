@@ -2,6 +2,7 @@
 import { Polybase } from '@polybase/client';
 import { POLYBASE_NAMESPACE } from 'react-native-dotenv';
 import { ethPersonalSign } from '@polybase/eth';
+import { WalletKeys } from './Wallet';
 
 // TODO: Use MMKV Instead https://github.com/mrousavy/react-native-mmkv
 import * as SecureStore from 'expo-secure-store';
@@ -14,7 +15,16 @@ export default function initPolybase() {
   });
 
   polybase.signer(async (data: string) => {
-    const privateKey: any = await SecureStore.getItemAsync('wallet.privateKey');
+    const currentAccount = 0; // Should be read from state
+    const accountKey = WalletKeys.ACCOUNT.replace(
+      '%s',
+      currentAccount.toString(),
+    );
+
+    console.log('accountKey', accountKey);
+
+    const privateKey: any = await SecureStore.getItemAsync(accountKey);
+
     if (!privateKey) {
       console.log('No privateKey found');
       return;

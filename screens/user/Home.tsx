@@ -7,9 +7,10 @@ import {
   Image,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react';
-
-const logo = require('../../assets/images/logo.png');
+import { useContext, useEffect, useState } from 'react';
+import { LocalDbContext } from '../../libraries/LocalDbProvider';
+import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
+import { FlatList } from 'react-native-gesture-handler';
 
 type Props = {
   navigation: NativeStackNavigationHelpers;
@@ -17,27 +18,61 @@ type Props = {
 
 export default function Home({ navigation }: Props) {
   const [account, setAccount] = useState(null);
+  const [profiles, setProfiles] = useState(null);
+  const localDb = useContext(LocalDbContext);
 
   useEffect(() => {
-    const getAccount = async () => {
-      const account = await SecureStore.getItemAsync('wallet.address');
-      setAccount(account);
-    };
+    async function localProfiles() {
+      if (!localDb) return;
 
-    getAccount();
-  }, []);
+      const _profiles = await localDb[MY_PROFILES_COLLECTION].find().exec();
+
+      console.log('profiles', _profiles);
+      setProfiles(_profiles);
+    }
+
+    localProfiles();
+  }, [localDb]);
 
   return (
-    <SafeAreaView className="flex flex-1 items-center justify-center gap-3 bg-violet-100">
-      <Image source={logo} style={{ width: 200, height: 200 }} />
+    <SafeAreaView className="flex flex-1 items-center justify-center gap-3 bg-slate-100">
+      <FlatList
+        className="w-full flex-1 gap-3 px-5 py-8"
+        data={profiles}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={async () => {
+              await SecureStore.setItemAsync('activeProfile', item.address);
+              navigation.navigate('Root', {
+                screen: 'Account',
+              });
+            }}
+          >
+            <View className="h-24 justify-center rounded-xl border-slate-200 bg-white p-3">
+              <Text className="px-8 text-center text-lg text-gray-600">
+                {item.displayName}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item) => item.handle}
+        ListEmptyComponent={() => (
+          <Text className="px-8 text-center text-lg text-gray-600">
+            No profiles found
+          </Text>
+        )}
+      />
 
-      <Text className="text-center text-2xl font-bold text-gray-800">Home</Text>
-      <Text className="px-8 text-center text-lg text-gray-600">
-        Welcome to Embrace! {account}
-      </Text>
-      <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
-        <Text className="px-8 text-center text-lg text-gray-600">Back</Text>
+      {/* <TouchableOpacity onPress={() => navigation.navigate('Account')}>
+        <Text className="px-8 text-center text-lg text-gray-600">
+          To Account Home
+        </Text>
       </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Community')}>
+        <Text className="px-8 text-center text-lg text-gray-600">
+          To Community
+        </Text>
+      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }
