@@ -2,7 +2,6 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { Image } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import * as SecureStore from 'expo-secure-store';
 import { FontAwesome } from '@expo/vector-icons';
 import { setActiveAccount } from '../libraries/Account';
 
