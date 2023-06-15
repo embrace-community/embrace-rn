@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useContext, useEffect, useState } from 'react';
-import { LocalDbContext } from '../../libraries/LocalDbProvider';
+import { RxDbContext } from '../../db/RxDbProvider';
 import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
 import { FlatList } from 'react-native-gesture-handler';
 
@@ -19,20 +19,20 @@ type Props = {
 export default function Home({ navigation }: Props) {
   const [account, setAccount] = useState(null);
   const [profiles, setProfiles] = useState(null);
-  const localDb = useContext(LocalDbContext);
+  const rxDb = useContext(RxDbContext);
 
   useEffect(() => {
     async function localProfiles() {
-      if (!localDb) return;
+      if (!rxDb) return;
 
-      const _profiles = await localDb[MY_PROFILES_COLLECTION].find().exec();
+      const _profiles = await rxDb[MY_PROFILES_COLLECTION].find().exec();
 
       console.log('profiles', _profiles);
       setProfiles(_profiles);
     }
 
     localProfiles();
-  }, [localDb]);
+  }, [rxDb]);
 
   return (
     <SafeAreaView className="flex flex-1 items-center justify-center gap-3 bg-slate-100">

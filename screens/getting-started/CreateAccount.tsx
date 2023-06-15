@@ -18,14 +18,14 @@ import { MY_PROFILES_COLLECTION, API_ENDPOINT } from 'react-native-dotenv';
 import { createWallet } from '../../libraries/Wallet';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
-import { LocalDbContext } from '../../libraries/LocalDbProvider';
+import { RxDbContext } from '../../db/RxDbProvider';
 
 type Props = {
   navigation: NativeStackNavigationHelpers;
 };
 
 export default function CreateAccount({ navigation }: Props) {
-  const localDb = useContext(LocalDbContext);
+  const rxDb = useContext(RxDbContext);
 
   const [handle, setHandle] = useState('martinopensky');
   const [displayName, setDisplayName] = useState('Martin');
@@ -42,7 +42,7 @@ export default function CreateAccount({ navigation }: Props) {
   // Update local profiles once CIDs have been set
   useEffect(() => {
     async function updateLocalProfile() {
-      if (!localDb || !cids || !handle) return;
+      if (!rxDb || !cids || !handle) return;
 
       console.log('SETTING PROFILE CIDS', cids);
 
@@ -54,13 +54,13 @@ export default function CreateAccount({ navigation }: Props) {
         data.avatarUri = `ipfs://${cids.avatarCid}`;
       }
 
-      await localDb[MY_PROFILES_COLLECTION].findOne(handle).update({
+      await rxDb[MY_PROFILES_COLLECTION].findOne(handle).update({
         $set: data,
       });
     }
 
     updateLocalProfile();
-  }, [localDb, cids, handle]);
+  }, [rxDb, cids, handle]);
 
   const initAccount = async () => {
     // Validate form - handle and display name
@@ -201,7 +201,7 @@ export default function CreateAccount({ navigation }: Props) {
       avatarUri: image,
     };
 
-    localDb[MY_PROFILES_COLLECTION].upsert(profile).catch((e) =>
+    rxDb[MY_PROFILES_COLLECTION].upsert(profile).catch((e) =>
       console.log('RxDB Error', e),
     );
 

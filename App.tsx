@@ -12,7 +12,7 @@ import { NavigationContainer } from '@react-navigation/native';
 
 // DBs
 import { PolybaseProvider } from '@polybase/react';
-import { LocalDbProvider } from './libraries/LocalDbProvider';
+import { RxDbProvider } from './db/RxDbProvider';
 import useInitiateDbs from './hooks/useInitiateDbs';
 
 import { resetAccount } from './libraries/Wallet';
@@ -26,13 +26,13 @@ const RootStack = createNativeStackNavigator();
 // resetAccount();
 
 export default function App() {
-  const { db, polybase } = useInitiateDbs();
+  const { rxDb, polybase } = useInitiateDbs();
   const isSetup = useIsSetup();
 
   if (isSetup === null) return null;
 
   return (
-    <LocalDbProvider localDb={db}>
+    <RxDbProvider rxDb={rxDb}>
       <PolybaseProvider polybase={polybase}>
         <NavigationContainer>
           <RootStack.Navigator screenOptions={{ headerShown: false }}>
@@ -45,6 +45,6 @@ export default function App() {
           </RootStack.Navigator>
         </NavigationContainer>
       </PolybaseProvider>
-    </LocalDbProvider>
+    </RxDbProvider>
   );
 }

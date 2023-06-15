@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
-import initPolybase from '../libraries/initPolybase';
-import initLocalDb from '../libraries/initLocalDb';
+import initPolybase from '../db/InitPolybase';
+import initRxDb from '../db/InitRxDB';
 
 export default function useInitiateDbs() {
-  const [db, setDb] = useState(null);
+  const [rxDb, setDb] = useState(null);
 
   const polybase = initPolybase();
 
   useEffect(() => {
-    const initDb = async function () {
-      const _db = await initLocalDb(polybase);
+    const _initRxDb = async function () {
+      const _db = await initRxDb(polybase);
       setDb(_db);
     };
 
-    initDb();
+    _initRxDb();
   }, []);
 
-  return { db, polybase };
+  return { rxDb, polybase };
 }

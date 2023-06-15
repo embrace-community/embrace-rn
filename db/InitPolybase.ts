@@ -2,7 +2,7 @@
 import { Polybase } from '@polybase/client';
 import { POLYBASE_NAMESPACE } from 'react-native-dotenv';
 import { ethPersonalSign } from '@polybase/eth';
-import { WalletKeys } from './Wallet';
+import { WalletKeys } from '../libraries/Wallet';
 
 // TODO: Use MMKV Instead https://github.com/mrousavy/react-native-mmkv
 import * as SecureStore from 'expo-secure-store';

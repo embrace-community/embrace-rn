@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { getActiveAccount } from '../libraries/Wallet';
-import { LocalDbContext } from '../libraries/LocalDbProvider';
+import { RxDbContext } from '../db/RxDbProvider';
 
 import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
 
@@ -12,7 +12,7 @@ type AccountProfile = {
 };
 
 export default function useActiveAccount() {
-  const localDb = useContext(LocalDbContext);
+  const rxDb = useContext(RxDbContext);
   const [accountAddress, setAccountAddress] = useState(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile>(null);
 
@@ -27,9 +27,9 @@ export default function useActiveAccount() {
 
   useEffect(() => {
     async function accountProfile() {
-      if (!localDb || !accountAddress) return;
+      if (!rxDb || !accountAddress) return;
 
-      const _profile = await localDb[MY_PROFILES_COLLECTION].findOne({
+      const _profile = await rxDb[MY_PROFILES_COLLECTION].findOne({
         selector: {
           address: accountAddress,
         },
@@ -41,7 +41,7 @@ export default function useActiveAccount() {
     }
 
     accountProfile();
-  }, [localDb, accountAddress]);
+  }, [rxDb, accountAddress]);
 
   return accountProfile;
 }
