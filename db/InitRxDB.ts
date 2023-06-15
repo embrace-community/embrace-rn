@@ -17,7 +17,7 @@ addRxPlugin(RxDBQueryBuilderPlugin);
 
 import localProfileSchema from './schema/my-profiles.rxdb';
 import { Polybase } from '@polybase/client';
-import { isMnemonicSet } from '../libraries/Wallet';
+import { isMnemonicSet } from '../libraries/Account';
 
 if (!LOCAL_DB_NAME) {
   throw new Error('LOCAL_DB_NAME not defined');

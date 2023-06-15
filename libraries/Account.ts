@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { ethers } from 'ethers';
 import { ENV, DEV_MNEMONIC, MAX_NUMBER_OF_ACCOUNTS } from 'react-native-dotenv';
 
-type WalletKeysType = {
+type AccountKeysType = {
   MNEMONIC: string;
   NUMBER_OF_ACCOUNTS: string;
   MAX_NUMBER_OF_ACCOUNTS: string;
@@ -11,7 +11,7 @@ type WalletKeysType = {
   ACTIVE_ACCOUNT: string;
 };
 
-export const WalletKeys: WalletKeysType = {
+export const AccountKeys: AccountKeysType = {
   MNEMONIC: 'wallet.mnemonic',
   NUMBER_OF_ACCOUNTS: 'wallet.numberOfAccounts',
   MAX_NUMBER_OF_ACCOUNTS: 'wallet.maxNumberOfAccounts',
@@ -28,7 +28,7 @@ const getAccount = async (accountNumber: AccountNumber) => {
 
   // Check to see if we already have this account
   const accountPk = await SecureStore.getItemAsync(
-    WalletKeys.ACCOUNT.replace('%s', accountNumber.toString()),
+    AccountKeys.ACCOUNT.replace('%s', accountNumber.toString()),
   );
 
   if (accountPk) {
@@ -49,7 +49,7 @@ const createAccount = async () => {
 
   // Get the next account number
   const storageNumberOfAccounts = await SecureStore.getItemAsync(
-    WalletKeys.NUMBER_OF_ACCOUNTS,
+    AccountKeys.NUMBER_OF_ACCOUNTS,
   );
 
   // Get the count of number of accounts
@@ -69,7 +69,7 @@ const createAccount = async () => {
   // So the next account number is the current number of accounts
   const nextAccountNumber: AccountNumber = numberOfAccounts as AccountNumber;
 
-  const mnemonic = await SecureStore.getItemAsync(WalletKeys.MNEMONIC);
+  const mnemonic = await SecureStore.getItemAsync(AccountKeys.MNEMONIC);
 
   if (!mnemonic) {
     console.log('No mnemonic found');
@@ -103,23 +103,26 @@ const createWallet = async () => {
   // Set the max number of accounts that can be created
   console.log('MAX_NUMBER_OF_ACCOUNTS', MAX_NUMBER_OF_ACCOUNTS);
   await SecureStore.setItemAsync(
-    WalletKeys.MAX_NUMBER_OF_ACCOUNTS,
+    AccountKeys.MAX_NUMBER_OF_ACCOUNTS,
     MAX_NUMBER_OF_ACCOUNTS || '5',
   );
 
   // Use the development mnemonic if we are in development mode
   if (ENV === 'development') {
-    await SecureStore.setItemAsync(WalletKeys.MNEMONIC, DEV_MNEMONIC);
+    await SecureStore.setItemAsync(AccountKeys.MNEMONIC, DEV_MNEMONIC);
     wallet = ethers.Wallet.fromMnemonic(DEV_MNEMONIC);
     saveAccount(0, wallet.privateKey, wallet.address);
   } else {
     wallet = ethers.Wallet.createRandom();
     saveAccount(0, wallet.privateKey, wallet.address);
-    await SecureStore.setItemAsync(WalletKeys.MNEMONIC, wallet.mnemonic.phrase);
+    await SecureStore.setItemAsync(
+      AccountKeys.MNEMONIC,
+      wallet.mnemonic.phrase,
+    );
   }
 
   // Set the number of accounts to 1 as we have created the first one
-  await SecureStore.setItemAsync(WalletKeys.NUMBER_OF_ACCOUNTS, '1');
+  await SecureStore.setItemAsync(AccountKeys.NUMBER_OF_ACCOUNTS, '1');
   console.log('NUMBER_OF_ACCOUNTS', '1');
 
   setActiveAccount(wallet.address);
@@ -130,7 +133,7 @@ const createWallet = async () => {
 const isMnemonicSet = async () => {
   console.log('isMnemonicSet');
 
-  const mnemonic = await SecureStore.getItemAsync(WalletKeys.MNEMONIC);
+  const mnemonic = await SecureStore.getItemAsync(AccountKeys.MNEMONIC);
 
   if (!mnemonic) {
     console.log('No mnemonic found');
@@ -145,16 +148,16 @@ const resetAccount = async () => {
   console.log('resetAccount');
 
   // Set the number of accounts to 0 at this stage
-  await SecureStore.setItemAsync(WalletKeys.NUMBER_OF_ACCOUNTS, '0');
+  await SecureStore.setItemAsync(AccountKeys.NUMBER_OF_ACCOUNTS, '0');
   console.log('NUMBER_OF_ACCOUNTS', '0');
 
   // Remove all accounts
-  await SecureStore.deleteItemAsync(WalletKeys.ACCOUNT.replace('%s', '0'));
-  await SecureStore.deleteItemAsync(WalletKeys.ACCOUNT.replace('%s', '1'));
-  await SecureStore.deleteItemAsync(WalletKeys.ACCOUNT.replace('%s', '2'));
+  await SecureStore.deleteItemAsync(AccountKeys.ACCOUNT.replace('%s', '0'));
+  await SecureStore.deleteItemAsync(AccountKeys.ACCOUNT.replace('%s', '1'));
+  await SecureStore.deleteItemAsync(AccountKeys.ACCOUNT.replace('%s', '2'));
 
   console.log('All accounts removed');
-  await SecureStore.deleteItemAsync(WalletKeys.MNEMONIC);
+  await SecureStore.deleteItemAsync(AccountKeys.MNEMONIC);
 };
 
 const saveAccount = async (
@@ -165,23 +168,36 @@ const saveAccount = async (
   console.log('saveAccount');
 
   await SecureStore.setItemAsync(
-    WalletKeys.ACCOUNT.replace('%s', accountNumber.toString()),
+    AccountKeys.ACCOUNT.replace('%s', accountNumber.toString()),
     privateKey,
   );
 
   await SecureStore.setItemAsync(
-    WalletKeys.ADDRESS.replace('%s', accountNumber.toString()),
+    AccountKeys.ADDRESS.replace('%s', accountNumber.toString()),
     address,
   );
 };
 
 const setActiveAccount = async (account: string) => {
   console.log('setActiveAccount', account);
-  await SecureStore.setItemAsync(WalletKeys.ACTIVE_ACCOUNT, account);
+  await SecureStore.setItemAsync(AccountKeys.ACTIVE_ACCOUNT, account);
 };
 
 const getActiveAccount = async (): Promise<string> => {
-  return await SecureStore.getItemAsync(WalletKeys.ACTIVE_ACCOUNT);
+  return await SecureStore.getItemAsync(AccountKeys.ACTIVE_ACCOUNT);
+};
+
+const getAccountPrivateKey = async (accountNumber: AccountNumber = 0) => {
+  // Check to see if we already have this account
+  const accountPk = await SecureStore.getItemAsync(
+    AccountKeys.ACCOUNT.replace('%s', accountNumber.toString()),
+  );
+
+  if (accountPk) {
+    return accountPk;
+  }
+
+  return false;
 };
 
 export {
@@ -191,4 +207,6 @@ export {
   isMnemonicSet,
   resetAccount,
   getActiveAccount,
+  setActiveAccount,
+  getAccountPrivateKey,
 };

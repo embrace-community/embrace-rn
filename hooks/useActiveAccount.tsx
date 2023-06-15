@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { getActiveAccount } from '../libraries/Wallet';
+import { getActiveAccount } from '../libraries/Account';
 import { RxDbContext } from '../db/RxDbProvider';
 
 import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';

@@ -15,7 +15,7 @@ import { AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import classNames from 'classnames';
 import { MY_PROFILES_COLLECTION, API_ENDPOINT } from 'react-native-dotenv';
-import { createWallet } from '../../libraries/Wallet';
+import { createWallet } from '../../libraries/Account';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { RxDbContext } from '../../db/RxDbProvider';

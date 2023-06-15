@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isMnemonicSet } from '../libraries/Wallet';
+import { isMnemonicSet } from '../libraries/Account';
 
 export default function useIsSetup() {
   const [isSetup, setIsSetup] = useState<boolean>(null);

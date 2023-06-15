@@ -15,7 +15,7 @@ import { PolybaseProvider } from '@polybase/react';
 import { RxDbProvider } from './db/RxDbProvider';
 import useInitiateDbs from './hooks/useInitiateDbs';
 
-import { resetAccount } from './libraries/Wallet';
+import { resetAccount } from './libraries/Account';
 import MainStackScreen from './navigation/MainStack';
 import SetupStackScreen from './navigation/SetupStack';
 import useIsSetup from './hooks/useIsSetup';
