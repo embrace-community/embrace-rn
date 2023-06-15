@@ -6,7 +6,7 @@ const UserStack = createNativeStackNavigator();
 export default function UserStackScreen() {
   return (
     <UserStack.Navigator screenOptions={{ headerBackVisible: false }}>
-      <UserStack.Screen name="UserAccounts" component={UserAccounts} />
+      <UserStack.Screen name="Accounts" component={UserAccounts} />
     </UserStack.Navigator>
   );
 }
