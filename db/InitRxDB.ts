@@ -6,7 +6,7 @@ import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import {
   ENV,
-  DEV_PK,
+  DEV_ACCOUNT_ADDRESS,
   LOCAL_DB_NAME,
   MY_PROFILES_COLLECTION,
 } from 'react-native-dotenv';
@@ -70,7 +70,9 @@ const initLocalDb = async (polybase: Polybase) => {
         await db[profileCollectionName].insert({
           handle: 'martinopensky',
           displayName: 'Martin',
-          address: DEV_PK,
+          address: DEV_ACCOUNT_ADDRESS,
+          localAvatarUri:
+            'file:///var/mobile/Containers/Data/Application/DA0645CD-BD87-4CE4-B6DF-438E1E6EE24F/Library/Caches/ExponentExperienceData/%2540martinopensky%252Fembrace-rn/ImageManipulator/9634E974-E12A-4B5B-9F0C-15743F393BA0.jpg',
         });
       }
     }

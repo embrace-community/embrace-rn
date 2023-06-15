@@ -198,7 +198,7 @@ export default function CreateAccount({ navigation }: Props) {
       address: accountAddress,
       handle,
       displayName,
-      avatarUri: image,
+      localAvatarUri: image,
     };
 
     rxDb[MY_PROFILES_COLLECTION].upsert(profile).catch((e) =>

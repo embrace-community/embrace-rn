@@ -1,7 +1,7 @@
 import { View, SafeAreaView } from 'react-native';
 import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
 import useActiveAccount from '../../hooks/useActiveAccount';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 type NativeStackNavigationHelpersUpdate = NativeStackNavigationHelpers & {
   setOptions: (options: any) => void;
@@ -15,7 +15,7 @@ type Props = {
 export default function Layout({ navigation, children }: Props) {
   const accountProfile = useActiveAccount();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!accountProfile) return;
 
     navigation.setOptions({
