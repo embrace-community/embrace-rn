@@ -84,17 +84,8 @@ export default function CreateAccount({ navigation }: Props) {
 
     console.log('profile', profile);
 
-    navigation.navigate('Root', {
+    navigation.navigate('Main', {
       screen: 'Account',
-      params: {
-        screen: 'AccountHome',
-        params: {
-          address: profile.address,
-          localAvatarUri: profile?.localAvatarUri,
-          handle: profile.handle,
-          displayName: profile.displayName,
-        },
-      },
     });
   };
 

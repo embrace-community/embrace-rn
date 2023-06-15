@@ -1,42 +1,30 @@
+import { View, SafeAreaView } from 'react-native';
 import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib/typescript/src/types';
-import {
-  Text,
-  View,
-  SafeAreaView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { AntDesign } from '@expo/vector-icons';
+import useActiveAccount from '../../hooks/useActiveAccount';
+import { useEffect } from 'react';
 
-type Props = {
-  navigation: NativeStackNavigationHelpers;
-  children: React.ReactNode;
-  profile: any;
+type NativeStackNavigationHelpersUpdate = NativeStackNavigationHelpers & {
+  setOptions: (options: any) => void;
 };
 
-export default function Layout({ navigation, children, profile }: Props) {
+type Props = {
+  navigation: NativeStackNavigationHelpersUpdate;
+  children: React.ReactNode;
+};
+
+export default function Layout({ navigation, children }: Props) {
+  const accountProfile = useActiveAccount();
+
+  useEffect(() => {
+    if (!accountProfile) return;
+
+    navigation.setOptions({
+      title: `${accountProfile?.displayName} (${accountProfile?.handle})`,
+    });
+  }, [accountProfile]);
+
   return (
     <SafeAreaView className="flex flex-1 gap-3 bg-white">
-      <View className="flex w-full flex-row items-center bg-white">
-        <TouchableOpacity
-          className="absolute left-3 top-0 z-50"
-          onPress={() => navigation.navigate('Root', { screen: 'User' })}
-        >
-          <View>
-            <Text>
-              <AntDesign name="close" size={24} color="black" />
-            </Text>
-          </View>
-        </TouchableOpacity>
-        {profile ? (
-          <Text className="h-8 flex-1 text-center text-lg font-semibold">
-            {profile?.displayName} ({profile?.handle})
-          </Text>
-        ) : (
-          <Text className="h-8 flex-1 text-center text-lg font-semibold"></Text>
-        )}
-      </View>
-
       <View className="flex flex-1 items-center justify-center gap-3 bg-slate-100">
         {children}
       </View>

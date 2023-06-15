@@ -20,7 +20,7 @@ export const WalletKeys: WalletKeysType = {
   ACTIVE_ACCOUNT: 'wallet.active',
 };
 
-type AccountNumber = 0 | 1 | 2;
+type AccountNumber = 0 | 1 | 2 | 3 | 4;
 
 // We start counting from 0.  Max 3 accounts
 const getAccount = async (accountNumber: AccountNumber) => {

@@ -4,7 +4,7 @@ import { LocalDbContext } from '../libraries/LocalDbProvider';
 
 import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
 
-type Profile = {
+type AccountProfile = {
   address: string;
   avatarUri: string;
   displayName: string;
@@ -14,7 +14,7 @@ type Profile = {
 export default function useActiveAccount() {
   const localDb = useContext(LocalDbContext);
   const [accountAddress, setAccountAddress] = useState(null);
-  const [profile, setProfile] = useState<Profile>(null);
+  const [accountProfile, setAccountProfile] = useState<AccountProfile>(null);
 
   useEffect(() => {
     async function getActiveAccountAsync() {
@@ -26,7 +26,7 @@ export default function useActiveAccount() {
   }, []);
 
   useEffect(() => {
-    async function localProfiles() {
+    async function accountProfile() {
       if (!localDb || !accountAddress) return;
 
       const _profile = await localDb[MY_PROFILES_COLLECTION].findOne({
@@ -37,10 +37,11 @@ export default function useActiveAccount() {
 
       console.log('Profile', _profile, accountAddress);
 
-      setProfile(_profile);
+      setAccountProfile(_profile);
     }
-    localProfiles();
+
+    accountProfile();
   }, [localDb, accountAddress]);
 
-  return profile;
+  return accountProfile;
 }

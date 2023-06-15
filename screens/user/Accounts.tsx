@@ -43,7 +43,7 @@ export default function Home({ navigation }: Props) {
           <TouchableOpacity
             onPress={async () => {
               await SecureStore.setItemAsync('activeProfile', item.address);
-              navigation.navigate('Root', {
+              navigation.navigate('Main', {
                 screen: 'Account',
               });
             }}
