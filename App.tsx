@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import 'react-native-gesture-handler';
 
 // Imports for ethers
@@ -13,6 +13,7 @@ import { NavigationContainer } from '@react-navigation/native';
 // DBs
 import { PolybaseProvider } from '@polybase/react';
 import { RxDbProvider } from './db/RxDbProvider';
+
 import useInitiateDbs from './hooks/useInitiateDbs';
 
 import { resetAccount } from './libraries/Account';
@@ -23,7 +24,7 @@ import useIsSetup from './hooks/useIsSetup';
 const RootStack = createNativeStackNavigator();
 
 // TODO: Remove - only For testing purposes
-// resetAccount();
+//resetAccount();
 
 export default function App() {
   const { rxDb, polybase } = useInitiateDbs();

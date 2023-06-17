@@ -12,10 +12,10 @@ export default function initPolybase() {
   });
 
   polybase.signer(async (data: string) => {
-    const privateKey: any = getAccountPrivateKey(0);
+    const privateKey: string | boolean = await getAccountPrivateKey();
 
     if (!privateKey) {
-      console.log('No privateKey found');
+      console.log('InitPolybase: No privateKey found');
       return;
     }
 

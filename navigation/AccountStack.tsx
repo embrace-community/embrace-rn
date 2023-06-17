@@ -38,6 +38,7 @@ export default function AccountStackScreen() {
               <FontAwesome name="user" size={24} />
             </Text>
           ),
+          title: '',
         })}
       />
       <AccountStack.Screen
@@ -53,6 +54,7 @@ export default function AccountStackScreen() {
               <FontAwesome name="connectdevelop" size={24} />
             </Text>
           ),
+          title: '',
         })}
       />
       <AccountStack.Screen
@@ -68,6 +70,7 @@ export default function AccountStackScreen() {
               <Fontisto name="tent" size={24} />
             </Text>
           ),
+          title: '',
         }}
       />
     </AccountStack.Navigator>

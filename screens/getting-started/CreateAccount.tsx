@@ -14,8 +14,11 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import classNames from 'classnames';
-import { MY_PROFILES_COLLECTION, API_ENDPOINT } from 'react-native-dotenv';
-import { createWallet } from '../../libraries/Account';
+import {
+  LOCAL_DB_COLLECTION_MY_PROFILES,
+  API_ENDPOINT,
+} from 'react-native-dotenv';
+import { ActiveAccount, createWallet } from '../../libraries/Account';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { RxDbContext } from '../../db/RxDbProvider';
@@ -54,7 +57,7 @@ export default function CreateAccount({ navigation }: Props) {
         data.avatarUri = `ipfs://${cids.avatarCid}`;
       }
 
-      await rxDb[MY_PROFILES_COLLECTION].findOne(handle).update({
+      await rxDb[LOCAL_DB_COLLECTION_MY_PROFILES].findOne(handle).update({
         $set: data,
       });
     }
@@ -71,10 +74,10 @@ export default function CreateAccount({ navigation }: Props) {
     setLoading(true);
 
     // Create wallet
-    const accountAddress = await createWallet();
+    const activeAccount = await createWallet();
 
     // Save profile to local DB - will be synced to Polybase
-    const profile = createProfile(accountAddress);
+    const profile = createProfile(activeAccount);
 
     // Upload metadata & avatar to IPFS
     // Once CIDs have been set then they will be saved to Profile collection
@@ -191,17 +194,18 @@ export default function CreateAccount({ navigation }: Props) {
   };
 
   // Creating profile in local DB
-  const createProfile = async (accountAddress: string) => {
+  const createProfile = async (activeAccount: ActiveAccount) => {
     console.log('Creating profile');
 
+    // TODO: account.number will differ depending on w
     const profile = {
-      address: accountAddress,
+      account: activeAccount,
       handle,
       displayName,
       localAvatarUri: image,
     };
 
-    rxDb[MY_PROFILES_COLLECTION].upsert(profile).catch((e) =>
+    rxDb[LOCAL_DB_COLLECTION_MY_PROFILES].upsert(profile).catch((e) =>
       console.log('RxDB Error', e),
     );
 

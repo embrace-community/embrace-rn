@@ -5,15 +5,23 @@ const localProfileSchema = {
   primaryKey: 'handle',
   type: 'object',
   properties: {
+    account: {
+      type: 'object',
+      properties: {
+        number: {
+          type: 'integer',
+        },
+        address: {
+          type: 'string',
+          maxLength: '128',
+        },
+      },
+    },
     handle: {
       type: 'string',
       maxLength: '128',
     },
     displayName: {
-      type: 'string',
-      maxLength: '128',
-    },
-    address: {
       type: 'string',
       maxLength: '128',
     },
@@ -29,7 +37,7 @@ const localProfileSchema = {
       maxLength: '128',
     },
   },
-  required: ['handle', 'displayName', 'address'],
+  required: ['account', 'handle', 'displayName'],
 };
 
 export default localProfileSchema;

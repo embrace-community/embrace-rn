@@ -2,7 +2,7 @@ import { NativeStackNavigationHelpers } from '@react-navigation/native-stack/lib
 import { Text, SafeAreaView } from 'react-native';
 import { useContext, useEffect, useState } from 'react';
 import { RxDbContext } from '../../db/RxDbProvider';
-import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
+import { LOCAL_DB_COLLECTION_MY_PROFILES } from 'react-native-dotenv';
 import { FlatList } from 'react-native-gesture-handler';
 import AccountCard from '../../components/AccountCard';
 
@@ -18,7 +18,9 @@ export default function Home({ navigation }: Props) {
     async function localProfiles() {
       if (!rxDb) return;
 
-      const _profiles = await rxDb[MY_PROFILES_COLLECTION].find().exec();
+      const _profiles = await rxDb[
+        LOCAL_DB_COLLECTION_MY_PROFILES
+      ].find().exec();
 
       console.log('profiles', _profiles);
       setProfiles(_profiles);
@@ -33,7 +35,7 @@ export default function Home({ navigation }: Props) {
         className="w-full flex-1 gap-3 px-5 py-8"
         data={profiles}
         renderItem={({ item }) => (
-          <AccountCard account={item} navigation={navigation} />
+          <AccountCard profile={item} navigation={navigation} />
         )}
         keyExtractor={(item) => item.handle}
         ListEmptyComponent={() => (

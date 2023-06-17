@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { getActiveAccount } from '../libraries/Account';
 import { RxDbContext } from '../db/RxDbProvider';
 
-import { MY_PROFILES_COLLECTION } from 'react-native-dotenv';
+import { LOCAL_DB_COLLECTION_MY_PROFILES } from 'react-native-dotenv';
 
 type AccountProfile = {
   address: string;
@@ -11,27 +11,29 @@ type AccountProfile = {
   handle: string;
 };
 
-export default function useActiveAccount() {
+export default function useActiveProfile() {
   const rxDb = useContext(RxDbContext);
   const [accountAddress, setAccountAddress] = useState(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile>(null);
 
   useEffect(() => {
-    async function getActiveAccountAsync() {
-      const _accountAddress = await getActiveAccount();
-      setAccountAddress(_accountAddress);
+    async function _getActiveAccount() {
+      const _activeAccount = await getActiveAccount();
+      setAccountAddress(_activeAccount.address);
     }
 
-    getActiveAccountAsync();
+    _getActiveAccount();
   }, []);
 
   useEffect(() => {
     async function accountProfile() {
       if (!rxDb || !accountAddress) return;
 
-      const _profile = await rxDb[MY_PROFILES_COLLECTION].findOne({
+      const _profile = await rxDb[LOCAL_DB_COLLECTION_MY_PROFILES].findOne({
         selector: {
-          address: accountAddress,
+          ['account.address']: {
+            $eq: accountAddress,
+          },
         },
       }).exec();
 

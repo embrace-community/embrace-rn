@@ -22,6 +22,11 @@ export const AccountKeys: AccountKeysType = {
 
 type AccountNumber = 0 | 1 | 2 | 3 | 4;
 
+export type ActiveAccount = {
+  number: AccountNumber;
+  address: string;
+};
+
 // We start counting from 0.  Max 3 accounts
 const getAccount = async (accountNumber: AccountNumber) => {
   console.log('getAccount');
@@ -125,9 +130,14 @@ const createWallet = async () => {
   await SecureStore.setItemAsync(AccountKeys.NUMBER_OF_ACCOUNTS, '1');
   console.log('NUMBER_OF_ACCOUNTS', '1');
 
-  setActiveAccount(wallet.address);
+  const activeAccount: ActiveAccount = {
+    number: 1,
+    address: wallet.address,
+  };
 
-  return wallet.address;
+  setActiveAccount(activeAccount);
+
+  return activeAccount;
 };
 
 const isMnemonicSet = async () => {
@@ -178,26 +188,47 @@ const saveAccount = async (
   );
 };
 
-const setActiveAccount = async (account: string) => {
-  console.log('setActiveAccount', account);
-  await SecureStore.setItemAsync(AccountKeys.ACTIVE_ACCOUNT, account);
+const setActiveAccount = async (activeAccount: ActiveAccount) => {
+  console.log('setActiveAccount', activeAccount);
+
+  await SecureStore.setItemAsync(
+    AccountKeys.ACTIVE_ACCOUNT,
+    JSON.stringify(activeAccount),
+  );
 };
 
-const getActiveAccount = async (): Promise<string> => {
-  return await SecureStore.getItemAsync(AccountKeys.ACTIVE_ACCOUNT);
-};
-
-const getAccountPrivateKey = async (accountNumber: AccountNumber = 0) => {
-  // Check to see if we already have this account
-  const accountPk = await SecureStore.getItemAsync(
-    AccountKeys.ACCOUNT.replace('%s', accountNumber.toString()),
+const getActiveAccount = async (): Promise<ActiveAccount | null> => {
+  const activeAccountString: string = await SecureStore.getItemAsync(
+    AccountKeys.ACTIVE_ACCOUNT,
   );
 
-  if (accountPk) {
-    return accountPk;
+  if (!activeAccountString) return null;
+
+  const activeAccount: ActiveAccount = JSON.parse(activeAccountString);
+
+  return activeAccount;
+};
+
+// Will return the private key for the active account
+const getAccountPrivateKey = async () => {
+  const activeAccount: ActiveAccount = await getActiveAccount();
+
+  if (!activeAccount) return null;
+
+  // Account path is the account number minus 1
+  const accountPath = activeAccount.number - 1;
+
+  // Check to see if we already have this account
+  const accountPk = await SecureStore.getItemAsync(
+    AccountKeys.ACCOUNT.replace('%s', accountPath.toString()),
+  );
+
+  if (!accountPk) {
+    console.log('No account found for: ', activeAccount);
+    return null;
   }
 
-  return false;
+  return accountPk;
 };
 
 export {
